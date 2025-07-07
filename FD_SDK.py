@@ -318,19 +318,19 @@ class FaceDetection:
     
     def modify_face(self,id,name = None, img = None):
         if name is None and img is None:
-            return
+            return -1
         elif img is not None :
             if self.engine == 'opencv':
                 rgbimg = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
                 dets = self.detector(img,1)
                 if len(dets) != 1 :
-                    return 
+                    return -1
                 for det in dets:
                     feature = self.get_feature_opencv(rgbimg,det)
             elif self.engine == 'openvino' :
                 facevalue = self.img_detect(img)
                 if len(facevalue) != 1 :
-                    return  
+                    return -1 
                 for result in facevalue:
                     x1, y1, x2, y2 = result
                     face = img[y1:y2, x1:x2]
@@ -349,7 +349,7 @@ class FaceDetection:
             cur.execute("UPDATE face set name = ? where id = ?", (name,id))
             conn.commit()
             conn.close
-
+        return 0
     def delete_face(self,id):
         conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
         cur = conn.cursor()

@@ -12,17 +12,6 @@ sudo apt install build-essential cmake
 pip install -r requirements.txt
 ```
 
-安裝完後請下載以下模型：
-* face-detection-0204
-* landmarks-regression-retail-0009
-* face-reidentification-retail-0095
-
-以上三個模型請移至`intel`資料夾
-* shape_predictor_68_face_landmarks.dat
-* dlib_face_recognition_resnet_model_v1.dat
-
-以上兩個模型請移至`dlib_model`資料夾
-
 安裝完後把`FD_SDK.py`(或`FD_SDK.so`)移至與主程式同一目錄並在主程式`from FD_SDK import FaceDetection`即可使用api
 如要使用人臉記憶功能請先`python3 create_db.py`
 
