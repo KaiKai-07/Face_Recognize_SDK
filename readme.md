@@ -53,7 +53,7 @@ ret, face = face_detection.recognize_single(ref_img,img)
 
 範例：
 ```python
-ret, face = face_detection.recognize_single(ref_img,img)
+ret, face = face_detection.recognize_multi(ref_img,img)
 ```
 ### recognize_with_cam(ref_img)
 功能：傳入兩張照片,第一張是註冊者的照片，第二張是欲進行人臉辨識的照片,第一張照片只能有一張人臉  
@@ -73,7 +73,7 @@ ret, frame, face = face_detection.recognize_with_cam(ref_img)
 id = face_detection.add_face('Chou',img)
 ```
 ### modify_face(id,name = 'newname',img = 'newimg')
-功能：呼叫者提供ID，再提供照片或名字即可把資料庫的內容更新(若選照片或名字擇一座更改)  
+功能：呼叫者提供ID，再提供照片或名字即可把資料庫的內容更新(若選照片或名字擇一座更改),更新成功回傳0,否則回傳-1  
 範例：
 ```python
 face_detection.modify_face(1, name = 'Chou', img = new_img)
