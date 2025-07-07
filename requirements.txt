@@ -1,0 +1,4 @@
+opencv-python
+numpy
+dlib
+openvino-dev

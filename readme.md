@@ -9,9 +9,7 @@
 ```bash
 sudo apt update
 sudo apt install build-essential cmake  
-pip install numpy opencv-python
-pip install openvino-dev
-pip install dlib
+pip install -r requirements.txt
 ```
 
 安裝完後請下載以下模型：
