@@ -2,6 +2,22 @@ import cv2
 import dlib
 import numpy as np
 from openvino.runtime import Core
+import sqlite3
+import io
+
+def adapt_array(arr):
+    out = io.BytesIO()
+    np.save(out, arr)
+    out.seek(0)
+    return sqlite3.Binary(out.read())
+
+def convert_array(text):
+    out = io.BytesIO(text)
+    out.seek(0)
+    return np.load(out, allow_pickle=False)
+
+sqlite3.register_adapter(np.ndarray, adapt_array)
+sqlite3.register_converter("ARRAY", convert_array)
 
 class FaceDetection:
     def __init__(self,engine):
@@ -169,7 +185,7 @@ class FaceDetection:
                 x2 = d.right()
                 y2 = d.bottom()
                 feature = self.get_feature_opencv(img,d)
-            dist = np.linalg.norm(ref_feature-feature)
+            dist = 1 - np.linalg.norm(ref_feature-feature)
 
             #facevalue = self.img_detect(img)
             return 0, [[dist,x1,y1,x2,y2]]
@@ -210,7 +226,7 @@ class FaceDetection:
                 x2 = d.right()
                 y2 = d.bottom()
                 feature = self.get_feature_opencv(img,d)
-                dist = np.linalg.norm(ref_feature-feature)
+                dist = 1 - np.linalg.norm(ref_feature-feature)
                 box.append([dist,x1,y1,x2,y2])
             return 0, box
         
@@ -251,7 +267,7 @@ class FaceDetection:
                 x2 = d.right()
                 y2 = d.bottom()
                 feature = self.get_feature_opencv(rgbframe,d)
-                dist = np.linalg.norm(ref_feature-feature)
+                dist = 1 - np.linalg.norm(ref_feature-feature)
                 box.append([dist,x1,y1,x2,y2])
             return 0, frame , box
         
@@ -275,6 +291,117 @@ class FaceDetection:
                 box.append([cosine_similarity,x1,y1,x2,y2])
             return 0, frame, box
             
+    def add_face(self,name,img):
+        if self.engine == 'opencv':
+            rgbimg = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+            dets = self.detector(img,1)
+            if len(dets) != 1 :
+                return -1
+            for det in dets:
+                feature = self.get_feature_opencv(rgbimg,det)
+        elif self.engine == 'openvino' :
+            facevalue = self.img_detect(img)
+            if len(facevalue) != 1 :
+                return -1, 
+            for result in facevalue:
+                x1, y1, x2, y2 = result
+                face = img[y1:y2, x1:x2]
+                feature = self.get_feature_openvino(face)
+        
+        conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
+        cur = conn.cursor()
+        cur.execute("INSERT INTO face (name, feature_type, feature) VALUES (?, ?, ?)", (name, self.engine, feature))
+        conn.commit()
+        face_id = cur.lastrowid
+        conn.close
+        return face_id
+    
+    def modify_face(self,id,name = None, img = None):
+        if name is None and img is None:
+            return
+        elif img is not None :
+            if self.engine == 'opencv':
+                rgbimg = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+                dets = self.detector(img,1)
+                if len(dets) != 1 :
+                    return 
+                for det in dets:
+                    feature = self.get_feature_opencv(rgbimg,det)
+            elif self.engine == 'openvino' :
+                facevalue = self.img_detect(img)
+                if len(facevalue) != 1 :
+                    return  
+                for result in facevalue:
+                    x1, y1, x2, y2 = result
+                    face = img[y1:y2, x1:x2]
+                    feature = self.get_feature_openvino(face)
+            conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
+            cur = conn.cursor()
+            if name == None:
+                cur.execute("UPDATE face set feature = ? where id = ?", (feature,id))
+            else:
+                cur.execute("UPDATE face set name = ?, feature = ? where id = ?", (name,feature,id))
+            conn.commit()
+            conn.close
+        elif img is None and name is not None :
+            conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
+            cur = conn.cursor()
+            cur.execute("UPDATE face set name = ? where id = ?", (name,id))
+            conn.commit()
+            conn.close
+
+    def delete_face(self,id):
+        conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
+        cur = conn.cursor()
+        cur.execute("DELETE FROM face where id = ?",(id,))
+        conn.commit()
+        conn.close
+    
+    def auto_recognize(self):
+        conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
+        cur = conn.cursor()
+        cur.execute("SELECT name, feature FROM face where feature_type = ?",(self.engine,))
+        ref = cur.fetchall()
+        #print(ref)
+        conn.close
+        box = []
+        if self.engine == 'opencv':
+            ret, frame = self.cap.read()
+            rgbframe = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            dets2 = self.detector(rgbframe,1)
+            for d in dets2:
+                x1 = d.left()
+                y1 = d.top()
+                x2 = d.right()
+                y2 = d.bottom()
+                feature = self.get_feature_opencv(rgbframe,d)
+                max_similarity = -1
+                best_match_name = "Unknown"
+                for name, ref_feature in ref:
+                    similarity = 1 - np.linalg.norm(ref_feature-feature)
+                    if similarity > max_similarity:
+                        max_similarity = similarity
+                        best_match_name = name if similarity > 0.5 else "Unknown"
+                box.append([best_match_name,max_similarity,x1,y1,x2,y2])
+            return frame, box
+        elif self.engine == 'openvino':
+            ret, frame = self.cap.read()
+            facevalue = self.img_detect(frame)
+            for result in facevalue:
+                x1, y1, x2, y2 = result
+                face = frame[y1:y2, x1:x2]
+                feature = self.get_feature_openvino(face)
+                max_similarity = -1
+                best_match_name = "Unknown"
+                for name, ref_feature in ref:
+                    similarity = np.dot(ref_feature, feature) / (np.linalg.norm(ref_feature) * np.linalg.norm(feature))
+                    if similarity > max_similarity:
+                        max_similarity = similarity
+                        best_match_name = name if similarity > 0.5 else "Unknown"
+                box.append([best_match_name,max_similarity,x1,y1,x2,y2])
+            return frame, box
+
+    
     def DetectionEnd(self):
         self.cap.release()
         cv2.destroyAllWindows()
