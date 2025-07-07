@@ -103,4 +103,8 @@ face_detection.delete_face(1)
 功能：自動啟動攝影機,偵測畫面中的人臉並與資料庫中的人臉做比對  
 回傳兩個值：
 * 第一個值為攝影機畫面
-* 第二個值是一個list，裡面是每張臉的名字、最高相似度和邊界座標[name,max_similarity,x1,y1,x2,y2],若最高相似度小於0.5則名字回傳'Unknown'
+* 第二個值是一個list，裡面是每張臉的名字、最高相似度和邊界座標[name,max_similarity,x1,y1,x2,y2],若最高相似度小於0.5則名字回傳'Unknown'  
+範例：
+```python
+frame, face = face_detection.auto_recognize()
+```
