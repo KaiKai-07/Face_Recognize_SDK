@@ -16,6 +16,20 @@ pip install -r requirements.txt
 如要使用人臉記憶功能請先`python3 create_db.py`
 
 ---
+## main.py 操作說明
+本專案提供main.py當作範例主程式,為一TUI界面,終端機輸入`python3 main.py`即可啟動  
+main.py的第五行`face_detection = FaceDetection(engine='openvino')`openvino可替換為opencv即切換為opencv+dlib模型  
+main.py提供以下功能：  
+![](./assets/pic1.png)
+
+以功能一做示範,先按1後按enter,輸入要被偵測圖片的路徑  
+![](./assets/pic2.png)
+
+就會跳出一個視窗是框出照片中的人臉  
+![](./assets/pic3.png)  
+按q即可退出視窗並繼續選擇使用其他功能或按10選擇退出
+
+---
 ## API功能說明(以下如有參數是帶入圖片的都請先cv2.imread後再帶入)
 ### 初始化物件 FaceDetection(engine = '模型')
 功能：帶入模型即可啟動模型，目前支援opencv和openvino  

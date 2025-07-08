@@ -68,6 +68,9 @@ class FaceDetection:
         return np.array(feature)  #轉換numpy array格式
     
     def get_feature_openvino(self,img):
+        if img is None or img.size == 0:
+            #print('error')
+            return None
         # 提取參考人臉的 landmarks 並校正
         ref_face_crop = cv2.resize(img, (self.w_l, self.h_l))
         ref_face_input = ref_face_crop.transpose((2, 0, 1))[np.newaxis, :].astype(np.float32)
@@ -282,11 +285,15 @@ class FaceDetection:
                 ref_feature = self.get_feature_openvino(ref_face)
 
             ret, frame = self.cap.read()
+            if frame is None:
+                print('error')
             facevalue = self.img_detect(frame)
             for result in facevalue:
                 x1, y1, x2, y2 = result
                 face = frame[y1:y2, x1:x2]
                 feature = self.get_feature_openvino(face)
+                if feature is None:
+                    continue
                 cosine_similarity = np.dot(ref_feature, feature) / (np.linalg.norm(ref_feature) * np.linalg.norm(feature))
                 box.append([cosine_similarity,x1,y1,x2,y2])
             return 0, frame, box
@@ -391,6 +398,8 @@ class FaceDetection:
                 x1, y1, x2, y2 = result
                 face = frame[y1:y2, x1:x2]
                 feature = self.get_feature_openvino(face)
+                if feature is None:
+                    continue
                 max_similarity = -1
                 best_match_name = "Unknown"
                 for name, ref_feature in ref:

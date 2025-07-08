@@ -84,6 +84,8 @@ while True:
     elif choose == 5:
         ref_img = input('Please provide the registered user\'s photo:')
         ref_img = cv2.imread(ref_img)
+        # if ref_img is None:
+        #     print('error')
         while True:
             ret, frame, boxes = face_detection.recognize_with_cam(ref_img)
             if ret != 0 :
