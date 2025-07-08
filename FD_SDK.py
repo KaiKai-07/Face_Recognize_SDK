@@ -69,7 +69,7 @@ class FaceDetection:
     
     def get_feature_openvino(self,img):
         if img is None or img.size == 0:
-            #print('error')
+            #print(img)
             return None
         # 提取參考人臉的 landmarks 並校正
         ref_face_crop = cv2.resize(img, (self.w_l, self.h_l))
@@ -177,7 +177,7 @@ class FaceDetection:
             if len(dets) != 1 :
                 return -1 , None
             dets1 = self.detector(img,1)
-            if len(dets1) != 1 :
+            if len(dets1) > 1 :
                 return -1 , None
             for det in dets:
                 ref_feature = self.get_feature_opencv(ref_img,det)
@@ -196,17 +196,21 @@ class FaceDetection:
         elif self.engine == 'openvino':
             ref_facevalue = self.img_detect(ref_img)
             facevalue = self.img_detect(img)
-            if len(facevalue) != 1 or len(ref_facevalue) != 1:
+            if len(facevalue) > 1 or len(ref_facevalue) != 1:
                 return -1, None
             for result in ref_facevalue:
                 x1, y1, x2, y2 = result
                 ref_face = ref_img[y1:y2, x1:x2]
                 ref_feature = self.get_feature_openvino(ref_face)
+                if ref_feature is None:
+                    return -1, None
             
             for result in facevalue:
                 x1, y1, x2, y2 = result
                 face = img[y1:y2, x1:x2]
                 feature = self.get_feature_openvino(face)
+                if feature is None:
+                    return 0, []
             
             cosine_similarity = np.dot(ref_feature, feature) / (np.linalg.norm(ref_feature) * np.linalg.norm(feature))
             return 0, [[cosine_similarity,x1,y1,x2,y2]]
@@ -242,12 +246,16 @@ class FaceDetection:
                 x1, y1, x2, y2 = result
                 ref_face = ref_img[y1:y2, x1:x2]
                 ref_feature = self.get_feature_openvino(ref_face)
+                if ref_feature is None:
+                    return -1, None
             
             facevalue = self.img_detect(img)
             for result in facevalue:
                 x1, y1, x2, y2 = result
                 face = img[y1:y2, x1:x2]
                 feature = self.get_feature_openvino(face)
+                if feature is None:
+                    continue
                 cosine_similarity = np.dot(ref_feature, feature) / (np.linalg.norm(ref_feature) * np.linalg.norm(feature))
                 box.append([cosine_similarity,x1,y1,x2,y2])
             return 0, box

@@ -43,7 +43,7 @@ while True:
 
     elif choose == 3:
         ref_img = input('Please provide the registered user\'s photo:')
-        img = input('Please provide the photo to be recognized.')
+        img = input('Please provide the photo to be recognized:')
         ref_img = cv2.imread(ref_img)
         img = cv2.imread(img)
         ret, boxes = face_detection.recognize_single(ref_img,img)
@@ -63,7 +63,7 @@ while True:
 
     elif choose == 4:
         ref_img = input('Please provide the registered user\'s photo:')
-        img = input('Please provide the photo to be recognized.')
+        img = input('Please provide the photo to be recognized:')
         ref_img = cv2.imread(ref_img)
         img = cv2.imread(img)
         ret, boxes = face_detection.recognize_multi(ref_img,img)
