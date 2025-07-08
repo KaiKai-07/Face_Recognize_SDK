@@ -126,8 +126,11 @@ while True:
             print('fail')
     elif choose == 8:
         id = input('Which id\'s data you want to delete?')
-        face_detection.delete_face(id)
-        print('delete success')
+        ret = face_detection.delete_face(id)
+        if ret == 0:
+            print('delete success')
+        else:
+            print('fail')
     
     elif choose == 9: 
         while True:

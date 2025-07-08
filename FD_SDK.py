@@ -325,6 +325,14 @@ class FaceDetection:
         
         conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
         cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS face (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                name TEXT NOT NULL,
+                feature_type TEXT NOT NULL,
+                feature ARRAY NOT NULL
+            )
+        """)
         cur.execute("INSERT INTO face (name, feature_type, feature) VALUES (?, ?, ?)", (name, self.engine, feature))
         conn.commit()
         face_id = cur.lastrowid
@@ -352,6 +360,13 @@ class FaceDetection:
                     feature = self.get_feature_openvino(face)
             conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
             cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='face'")
+            isdb = cur.fetchone()
+            cur.execute("SELECT id FROM face WHERE id = ?",(id,))
+            isid = cur.fetchone()
+            if isdb is None or isid is None:
+                conn.close
+                return -1
             if name == None:
                 cur.execute("UPDATE face set feature = ? where id = ?", (feature,id))
             else:
@@ -361,6 +376,13 @@ class FaceDetection:
         elif img is None and name is not None :
             conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
             cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='face'")
+            isdb = cur.fetchone()
+            cur.execute("SELECT id FROM face WHERE id = ?",(id,))
+            isid = cur.fetchone()
+            if isdb is None or isid is None:
+                conn.close
+                return -1
             cur.execute("UPDATE face set name = ? where id = ?", (name,id))
             conn.commit()
             conn.close
@@ -368,9 +390,17 @@ class FaceDetection:
     def delete_face(self,id):
         conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
         cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='face'")
+        isdb = cur.fetchone()
+        cur.execute("SELECT id FROM face WHERE id = ?",(id,))
+        isid = cur.fetchone()
+        if isdb is None or isid is None:
+            conn.close
+            return -1
         cur.execute("DELETE FROM face where id = ?",(id,))
         conn.commit()
         conn.close
+        return 0
     
     def auto_recognize(self):
         conn = sqlite3.connect("face.db", detect_types=sqlite3.PARSE_DECLTYPES)
